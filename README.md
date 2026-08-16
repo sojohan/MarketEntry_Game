@@ -31,7 +31,7 @@ Those per-round payoffs are written into the public history. GRPO uses the **sum
 - Algorithm: GRPO via Tinker multiplayer RL
 - Horizon 10, $$\(P(\text{STRONG})=0.30\)$$
 - Batch 64, group size 8 (frozen), 4096 train datapoints → **64 steps**
-- Learning rate $$ \(3 \times 10^{-5}\)$$, `max_tokens=16`
+- Learning rate $ \(3 \times 10^{-5}\)$, `max_tokens=16`
 - Actions are prefills `ENTRANT:[` / `INCUMBENT:[`, stop at `]`
 - Format retries: 2, format penalty −1
 
