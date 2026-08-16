@@ -56,12 +56,12 @@ Entrant and incumbent are treated as alternative samples of the same decision. T
 
 **Patched self-play (`install_role_stratified_advantages`).** Each game is still one entrant and one incumbent taking sequential turns. After all games in the batch finish, the 32 entrant returns are pooled and the 32 incumbent returns are pooled:
 
-\[
+$$\[
 A_{\text{entrant,7}} = R_{\text{entrant,7}} - \bar{R}_{\text{all entrants}}
 \]
 \[
 A_{\text{incumbent,7}} = R_{\text{incumbent,7}} - \bar{R}_{\text{all incumbents}}
-\]
+\]$$
 
 “Was this a good episode?” is asked among players of the same role, not between the two sides of one match. The patch must be applied to both `tinker_cookbook.rl.data_processing.compute_advantages` and `tinker_cookbook.rl.train.compute_advantages`. This is the 17:44 run.
 
