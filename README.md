@@ -38,20 +38,19 @@ Those per-round payoffs are written into the public history. GRPO uses the **sum
 ### GRPO
 
 **GRPO** is Group Relative Policy Optimization. It is a policy-gradient method in the same family as PPO, but it does not train a critic. For each group of rollouts the advantage of sample \(i\) is how its return compares to the others in that group:
-$$
-\[
+
+$$\[
 A_i = R_i - \bar{R}_{\text{group}}
-\]
-$$
+\]$$
 (The original DeepSeek version also divides by the group standard deviation. Tinker’s `compute_advantages` only subtracts the group mean.) A return above the group mean is pushed up; a return below it is pushed down. `group_size` must be at least 2: identical returns in a group give advantage 0 and no learning signal.
 
 This grouping is separate from the sequential turns above. The game is unchanged; only the baseline used to score an episode changes.
 
 **Unpatched self-play.** A group is one 2-player game. Tinker sees a batch of 64 players as 32 games. In game 7 it does:
 
-\[
+$$\[
 A_{\text{entrant}} = R_{\text{entrant,7}} - \tfrac{R_{\text{entrant,7}} + R_{\text{incumbent,7}}}{2}
-\]
+\]$$
 
 Entrant and incumbent are treated as alternative samples of the same decision. They are not: different actions, different payoffs, one shared policy. A good incumbent return (e.g. +5 from stay-out) makes the entrant look bad even if STAY_OUT was right. ENTER can get a positive advantage because it is compared to the incumbent’s payoff, not to other entrants who stayed out. That is why 13:40 and 15:13 collapsed (incumbent copied ENTER; then always ENTER + FIGHT).
 
