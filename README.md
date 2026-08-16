@@ -29,20 +29,20 @@ Those per-round payoffs are written into the public history. GRPO uses the **sum
 ### Training defaults
 
 - Algorithm: GRPO via Tinker multiplayer RL
-- Horizon 10, \(P(\text{STRONG})=0.30\)
+- Horizon 10, $$\(P(\text{STRONG})=0.30\)$$
 - Batch 64, group size 8 (frozen), 4096 train datapoints → **64 steps**
-- Learning rate \(3 \times 10^{-5}\), `max_tokens=16`
+- Learning rate $$ \(3 \times 10^{-5}\)$$, `max_tokens=16`
 - Actions are prefills `ENTRANT:[` / `INCUMBENT:[`, stop at `]`
 - Format retries: 2, format penalty −1
 
 ### GRPO
 
 **GRPO** is Group Relative Policy Optimization. It is a policy-gradient method in the same family as PPO, but it does not train a critic. For each group of rollouts the advantage of sample \(i\) is how its return compares to the others in that group:
-
+$$
 \[
 A_i = R_i - \bar{R}_{\text{group}}
 \]
-
+$$
 (The original DeepSeek version also divides by the group standard deviation. Tinker’s `compute_advantages` only subtracts the group mean.) A return above the group mean is pushed up; a return below it is pushed down. `group_size` must be at least 2: identical returns in a group give advantage 0 and no learning signal.
 
 This grouping is separate from the sequential turns above. The game is unchanged; only the baseline used to score an episode changes.
