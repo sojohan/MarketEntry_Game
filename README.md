@@ -16,7 +16,7 @@ Two players, 10 rounds. The incumbent is privately **STRONG** with probability 0
 | ENTER | FIGHT (WEAK) | −2 | −2 |
 | Invalid action | | −5 | −5 |
 
-Unconditional ENTER against a type-separating incumbent is +EV: \(0.3 \times (-2) + 0.7 \times 3 = +1.5\) vs STAY_OUT \(= 0\). After a fight that reveals STRONG, ENTER pays −2 and the entrant should stay out.
+Unconditional ENTER against a type-separating incumbent is $$+EV: \(0.3 \times (-2) + 0.7 \times 3 = +1.5\)$$ vs STAY_OUT \(= 0\). After a fight that reveals STRONG, ENTER pays −2 and the entrant should stay out.
 
 A round is sequential, which is the right extensive form for this game:
 
