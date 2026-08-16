@@ -18,6 +18,14 @@ Two players, 10 rounds. The incumbent is privately **STRONG** with probability 0
 
 Unconditional ENTER against a type-separating incumbent is +EV: \(0.3 \times (-2) + 0.7 \times 3 = +1.5\) vs STAY_OUT \(= 0\). After a fight that reveals STRONG, ENTER pays −2 and the entrant should stay out.
 
+A round is sequential, which is the right extensive form for this game:
+
+1. The entrant chooses ENTER or STAY_OUT.
+2. If STAY_OUT, payoffs are `(0, +5)` and the incumbent does not move.
+3. If ENTER, the incumbent chooses FIGHT or ACCOMMODATE, then that round’s payoffs are applied.
+
+Those per-round payoffs are written into the public history. GRPO uses the **sum** over 10 rounds as the episode return. The incumbent should not choose fight/accommodate when nobody entered: that action would not change payoffs and would only add noise.
+
 ### Training defaults
 
 - Algorithm: GRPO via Tinker multiplayer RL
@@ -26,6 +34,39 @@ Unconditional ENTER against a type-separating incumbent is +EV: \(0.3 \times (-2
 - Learning rate \(3 \times 10^{-5}\), `max_tokens=16`
 - Actions are prefills `ENTRANT:[` / `INCUMBENT:[`, stop at `]`
 - Format retries: 2, format penalty −1
+
+### GRPO
+
+**GRPO** is Group Relative Policy Optimization. It is a policy-gradient method in the same family as PPO, but it does not train a critic. For each group of rollouts the advantage of sample \(i\) is how its return compares to the others in that group:
+
+\[
+A_i = R_i - \bar{R}_{\text{group}}
+\]
+
+(The original DeepSeek version also divides by the group standard deviation. Tinker’s `compute_advantages` only subtracts the group mean.) A return above the group mean is pushed up; a return below it is pushed down. `group_size` must be at least 2: identical returns in a group give advantage 0 and no learning signal.
+
+This grouping is separate from the sequential turns above. The game is unchanged; only the baseline used to score an episode changes.
+
+**Unpatched self-play.** A group is one 2-player game. Tinker sees a batch of 64 players as 32 games. In game 7 it does:
+
+\[
+A_{\text{entrant}} = R_{\text{entrant,7}} - \tfrac{R_{\text{entrant,7}} + R_{\text{incumbent,7}}}{2}
+\]
+
+Entrant and incumbent are treated as alternative samples of the same decision. They are not: different actions, different payoffs, one shared policy. A good incumbent return (e.g. +5 from stay-out) makes the entrant look bad even if STAY_OUT was right. ENTER can get a positive advantage because it is compared to the incumbent’s payoff, not to other entrants who stayed out. That is why 13:40 and 15:13 collapsed (incumbent copied ENTER; then always ENTER + FIGHT).
+
+**Patched self-play (`install_role_stratified_advantages`).** Each game is still one entrant and one incumbent taking sequential turns. After all games in the batch finish, the 32 entrant returns are pooled and the 32 incumbent returns are pooled:
+
+\[
+A_{\text{entrant,7}} = R_{\text{entrant,7}} - \bar{R}_{\text{all entrants}}
+\]
+\[
+A_{\text{incumbent,7}} = R_{\text{incumbent,7}} - \bar{R}_{\text{all incumbents}}
+\]
+
+“Was this a good episode?” is asked among players of the same role, not between the two sides of one match. The patch must be applied to both `tinker_cookbook.rl.data_processing.compute_advantages` and `tinker_cookbook.rl.train.compute_advantages`. This is the 17:44 run.
+
+**Frozen.** A group is `group_size` (8) independent copies of the same trainable role vs the same scripted opponent. That is why adaptation appeared in 09:35: some copies entered after a fight and some stayed out, so GRPO could tell which was better.
 
 ### Research hypotheses
 
@@ -55,9 +96,14 @@ Strategy:
 
 ### Training modes
 
-**`opponent=selfplay`.** Both roles live. Advantages are centered *within role across the batch* (entrant vs other entrants, incumbent vs other incumbents), not within a two-player game. That patch must be applied to both `tinker_cookbook.rl.data_processing.compute_advantages` and `tinker_cookbook.rl.train.compute_advantages`.
+See **GRPO** above for how advantages are centered in each mode.
+
+**`opponent=selfplay`.** Both roles live. Unpatched, a group is one 2-player game (runs 13:16–15:13). Patched, advantages are within role across the batch (17:44).
 
 **`opponent=frozen`.** One trainable role vs a scripted opponent. GRPO group = `group_size` independent copies of the same role. `frozen_opponent=mixed` expands to:
+
+- train incumbent: `always_enter` + `mixed_enter`
+- train entrant: `always_fight` + `always_accommodate`
 
 - train incumbent: `always_enter` + `mixed_enter`
 - train entrant: `always_fight` + `always_accommodate`
